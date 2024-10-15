@@ -1,1 +1,1 @@
-# computer-graphics
+ETS Grafika Komputer 2024
