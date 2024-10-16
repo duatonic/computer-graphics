@@ -66,6 +66,14 @@ var aspect;
 var translation = vec4(-15.0, 0.0, 0.0, 1.0);
 var indexColor = 0;
 
+var velocity = 1.0;
+var acceleration = 0.0;
+var angle = 0.0;
+var trajectory = "straight";
+
+var startTime = null;
+var isAnimating = false;
+
 var main = function () {
 
     function quad(a, b, c, d, color) {
@@ -143,6 +151,28 @@ var main = function () {
         return colors;
     }
 
+    function calculatePosition(t) {
+        var radAngle = angle * (Math.PI / 180); // Convert angle to radians
+        var x, y;
+
+        switch (trajectory) {
+            case "straight":
+                x = velocity * t;
+                y = 0;
+                break;
+            case "angled":
+                x = velocity * t * Math.cos(radAngle);
+                y = velocity * t * Math.sin(radAngle);
+                break;
+            case "parabola":
+                x = velocity * t * Math.cos(radAngle);
+                y = velocity * t * Math.sin(radAngle) - 0.5 * acceleration * t * t;
+                break;
+        }
+
+        return { x, y };
+    }
+
     function drawScene() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -201,6 +231,34 @@ var main = function () {
 
         // Add event listener for base color input
         document.getElementById("baseColor").addEventListener("input", drawScene);
+
+        // Add event listeners for trajectory controls
+        document.getElementById("trajectory-select").addEventListener("change", function() {
+            trajectory = this.value;
+        });
+
+        document.getElementById("velocity").addEventListener("input", function() {
+            velocity = parseFloat(this.value);
+        });
+
+        document.getElementById("acceleration").addEventListener("input", function() {
+            acceleration = parseFloat(this.value);
+        });
+
+        document.getElementById("angle").addEventListener("input", function() {
+            angle = parseFloat(this.value);
+        });
+
+        // Add event listeners for start and stop buttons
+        document.getElementById("startButton").addEventListener("click", function() {
+            isAnimating = true;
+            startTime = null; // Reset start time
+            requestAnimationFrame(render);
+        });
+
+        document.getElementById("stopButton").addEventListener("click", function() {
+            isAnimating = false;
+        });
     }
 
     function init() {
@@ -226,34 +284,30 @@ var main = function () {
         drawScene();
     }
 
-    function render() {
+    function render(currentTime) {
+        if (!isAnimating) return;
+
+        if (!startTime) startTime = currentTime;
+        var elapsedTime = (currentTime - startTime) / 1000; // Convert to seconds
+
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         eye = vec3(radius*Math.sin(theta)*Math.cos(phi), radius*Math.sin(theta)*Math.sin(phi), radius*Math.cos(theta));
-        modelViewMatrix = lookAt(eye, at , up);
-
         projectionMatrix = ortho(-8.0, 8.0, -8.0, 8.0, -8.0, 8.0);
 
-        gl.uniformMatrix4fv(
-            modelViewMatrixLoc,
-            false,
-            flatten(modelViewMatrix)
-        );
+        const { x, y } = calculatePosition(elapsedTime);
 
-        gl.uniformMatrix4fv(
-            projectionMatrixLoc,
-            false,
-            flatten(projectionMatrix)
-        );
+        modelViewMatrix = translate(x, y, 0);
+        gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+        gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
-        gl.drawArrays(gl.TRIANGLES, 0, numPositions);
+        drawScene();
 
         requestAnimationFrame(render);
     }
 
     eventListeners();
     init();
-    render();
 }
 
 main();
