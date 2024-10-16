@@ -5,60 +5,41 @@ var program;
 var canvas;
 var gl;
 
+var objectForce = 10.0;
+var objectMass = 10.0;
+
 var shape = "dodecahedron";
+var motion = "straight";
 
 var positionsArray = [];
 var colorsArray = [];
 var normalsArray = [];
 
-var numPositions  = 108;
+var numPositions = 108;
 var A = (1 + Math.sqrt(5)) / 2;
 var B = 1 / A;
 
 var vertices = [
-    vec4(1, 1, 1, 1.0), //8
-    vec4(1, 1, -1, 1.0), //7
-    vec4(1, -1, 1, 1.0), //6
-    vec4(1, -1, -1, 1.0), //5
-    vec4(-1, 1, 1, 1.0), //4
-    vec4(-1, 1, -1, 1.0), //3
-    vec4(-1, -1, 1, 1.0), //2
-    vec4(-1, -1, -1, 1.0), //1
-    vec4(0, B, A, 1.0), //12
-    vec4(0, B, -A, 1.0), //11
-    vec4(0, -B, A, 1.0), //10
-    vec4(0, -B, -A, 1.0), //9
-    vec4(B, A, 0, 1.0), //16
-    vec4(B, -A, 0, 1.0), //15
-    vec4(-B, A, 0, 1.0), //14
-    vec4(-B, -A, 0, 1.0), //13
-    vec4(A, 0, B, 1.0), //20
-    vec4(A, 0, -B, 1.0), //18
-    vec4(-A, 0, B, 1.0), //19
-    vec4(-A, 0, -B, 1.0), //17
-];
-
-var vertexColors = [
-    vec4(1.0, 0.0, 0.0, 1.0),  // Red
-    vec4(0.0, 1.0, 0.0, 1.0),  // Green
-    vec4(0.0, 0.0, 1.0, 1.0),  // Blue
-    vec4(1.0, 1.0, 0.0, 1.0),  // Yellow
-    vec4(1.0, 0.0, 1.0, 1.0),  // Magenta
-    vec4(0.0, 1.0, 1.0, 1.0),  // Cyan
-    vec4(0.5, 0.5, 0.5, 1.0),  // Gray
-    vec4(1.0, 0.5, 0.0, 1.0),  // Orange
-    vec4(0.5, 0.0, 0.5, 1.0),  // Purple
-    vec4(0.5, 0.5, 0.0, 1.0),  // Olive
-    vec4(0.0, 0.5, 0.5, 1.0),  // Teal
-    vec4(0.5, 0.0, 0.0, 1.0),  // Maroon
-    vec4(0.0, 0.5, 0.0, 1.0),  // Dark Green
-    vec4(0.0, 0.0, 0.5, 1.0),  // Navy
-    vec4(1.0, 0.75, 0.8, 1.0), // Pink
-    vec4(0.75, 1.0, 0.8, 1.0), // Light Green
-    vec4(0.75, 0.8, 1.0, 1.0), // Light Blue
-    vec4(1.0, 0.75, 0.5, 1.0), // Peach
-    vec4(0.75, 0.5, 1.0, 1.0), // Lavender
-    vec4(0.5, 1.0, 0.75, 1.0)  // Mint
+  vec4(1, 1, 1, 1.0), //8
+  vec4(1, 1, -1, 1.0), //7
+  vec4(1, -1, 1, 1.0), //6
+  vec4(1, -1, -1, 1.0), //5
+  vec4(-1, 1, 1, 1.0), //4
+  vec4(-1, 1, -1, 1.0), //3
+  vec4(-1, -1, 1, 1.0), //2
+  vec4(-1, -1, -1, 1.0), //1
+  vec4(0, B, A, 1.0), //12
+  vec4(0, B, -A, 1.0), //11
+  vec4(0, -B, A, 1.0), //10
+  vec4(0, -B, -A, 1.0), //9
+  vec4(B, A, 0, 1.0), //16
+  vec4(B, -A, 0, 1.0), //15
+  vec4(-B, A, 0, 1.0), //14
+  vec4(-B, -A, 0, 1.0), //13
+  vec4(A, 0, B, 1.0), //20
+  vec4(A, 0, -B, 1.0), //18
+  vec4(-A, 0, B, 1.0), //19
+  vec4(-A, 0, -B, 1.0), //17
 ];
 
 var lightPosition = vec4(1.0, 1.0, 1.0, 0.0);
@@ -83,239 +64,272 @@ var far = 3.0;
 var radius = 1.0;
 var theta = -0.8;
 var phi = 0.0;
-var dr = 5.0 * Math.PI/180.0;
+var dr = (5.0 * Math.PI) / 180.0;
 var aspect;
 
 var translation = vec4(-15.0, 0.0, 0.0, 1.0);
 var indexColor = 0;
 
+var vertexColors = [
+  vec4(1.0, 0.0, 0.0, 1.0), // Red
+  vec4(0.0, 1.0, 0.0, 1.0), // Green
+  vec4(0.0, 0.0, 1.0, 1.0), // Blue
+  vec4(1.0, 1.0, 0.0, 1.0), // Yellow
+  vec4(1.0, 0.0, 1.0, 1.0), // Magenta
+  vec4(0.0, 1.0, 1.0, 1.0), // Cyan
+  vec4(0.5, 0.5, 0.5, 1.0), // Gray
+  vec4(1.0, 0.5, 0.0, 1.0), // Orange
+  vec4(0.5, 0.0, 0.5, 1.0), // Purple
+  vec4(0.5, 0.5, 0.0, 1.0), // Olive
+  vec4(0.0, 0.5, 0.5, 1.0), // Teal
+  vec4(0.5, 0.0, 0.0, 1.0), // Maroon
+  vec4(0.0, 0.5, 0.0, 1.0), // Dark Green
+  vec4(0.0, 0.0, 0.5, 1.0), // Navy
+  vec4(1.0, 0.75, 0.8, 1.0), // Pink
+  vec4(0.75, 1.0, 0.8, 1.0), // Light Green
+  vec4(0.75, 0.8, 1.0, 1.0), // Light Blue
+  vec4(1.0, 0.75, 0.5, 1.0), // Peach
+  vec4(0.75, 0.5, 1.0, 1.0), // Lavender
+  vec4(0.5, 1.0, 0.75, 1.0), // Mint
+];
+
 var main = function () {
+  function quad(a, b, c, d) {
+    var indices = [a, b, c, a, c, d];
 
-    function quad(a, b, c, d) {
-        var indices = [a, b, c, a, c, d];
+    var t1 = subtract(vertices[b], vertices[a]);
+    var t2 = subtract(vertices[c], vertices[b]);
+    var normal = cross(t1, t2);
+    normal = vec3(normal);
 
-        var t1 = subtract(vertices[b], vertices[a]);
-        var t2 = subtract(vertices[c], vertices[b]);
-        var normal = cross(t1, t2);
-        normal = vec3(normal);
+    indexColor %= 20;
 
-        indexColor %= 20;
+    for (var i = 0; i < indices.length; i++) {
+      positionsArray.push(vertices[indices[i]]);
+      colorsArray.push(vertexColors[indexColor]);
 
-        for (var i = 0; i < indices.length; i++) {
-            positionsArray.push(vertices[indices[i]]);
-            colorsArray.push(vertexColors[indexColor]);
-
-            normalsArray.push(normal);
-        }
-
-        indexColor++;
+      normalsArray.push(normal);
     }
 
-    
-    function colorCube() {
-        quad(1, 0, 3, 2);
-        quad(2, 3, 7, 6);
-        quad(3, 0, 4, 7);
-        quad(6, 5, 1, 2);
-        quad(4, 5, 6, 7);
-        quad(5, 4, 0, 1);
-    }
-    
-    function penta(a, b, c, d, e) {
-        var indices = [a, b, c, c, e, a, c, d, e];
-        
-        var t1 = subtract(vertices[b], vertices[a]);
-        var t2 = subtract(vertices[c], vertices[b]);
-        var normal = cross(t1, t2);
-        normal = vec3(normal);
-        
-        indexColor %= 20;
-        
-        for (var i = 0; i < indices.length; i++) {
-            positionsArray.push(vertices[indices[i]]);
-            colorsArray.push(vertexColors[a]);
-            
-            normalsArray.push(normal);
-        }
-        
-        indexColor++;
-    }
-    
-    function colorPenta() {
-        penta(0, 16, 2, 10, 8);
-        penta(0, 8, 4, 14, 12);
-        penta(16, 17, 1, 12, 0);
-        penta(1, 9, 11, 3, 17);
-        penta(1, 12, 14, 5, 9);
-        penta(2, 13, 15, 6, 10);
-        penta(13, 3, 17, 16, 2);
-        penta(3, 11, 7, 15, 13);
-        penta(4, 8, 10, 6, 18);
-        penta(14, 5, 19, 18, 4);
-        penta(5, 19, 7, 11, 9);
-        penta(15, 7, 19, 18, 6);
+    indexColor++;
+  }
+
+  function colorCube() {
+    quad(1, 0, 3, 2);
+    quad(2, 3, 7, 6);
+    quad(3, 0, 4, 7);
+    quad(6, 5, 1, 2);
+    quad(4, 5, 6, 7);
+    quad(5, 4, 0, 1);
+  }
+
+  function penta(a, b, c, d, e) {
+    var indices = [a, b, c, c, e, a, c, d, e];
+
+    var t1 = subtract(vertices[b], vertices[a]);
+    var t2 = subtract(vertices[c], vertices[b]);
+    var normal = cross(t1, t2);
+    normal = vec3(normal);
+
+    indexColor %= 20;
+
+    for (var i = 0; i < indices.length; i++) {
+      positionsArray.push(vertices[indices[i]]);
+      colorsArray.push(vertexColors[a]);
+
+      normalsArray.push(normal);
     }
 
-    eventListeners();
-    init();
+    indexColor++;
+  }
 
-    function eventListeners() {
-        document.getElementById("object-select").addEventListener("change", function() {
-            shape = this.value;
+  function colorPenta() {
+    penta(0, 16, 2, 10, 8);
+    penta(0, 8, 4, 14, 12);
+    penta(16, 17, 1, 12, 0);
+    penta(1, 9, 11, 3, 17);
+    penta(1, 12, 14, 5, 9);
+    penta(2, 13, 15, 6, 10);
+    penta(13, 3, 17, 16, 2);
+    penta(3, 11, 7, 15, 13);
+    penta(4, 8, 10, 6, 18);
+    penta(14, 5, 19, 18, 4);
+    penta(5, 19, 7, 11, 9);
+    penta(15, 7, 19, 18, 6);
+  }
 
-            if (shape === "cube") {
-                numPositions = 36;
-                vertices = [
-                    vec4(-6.5, -6.5, 6.5, 7.0),
-                    vec4(-6.5, 6.5, 6.5, 7.0),
-                    vec4(6.5, 6.5, 6.5, 7.0),
-                    vec4(6.5, -6.5, 6.5, 7.0),
-                    vec4(-6.5, -6.5, -6.5, 7.0),
-                    vec4(-6.5, 6.5, -6.5, 7.0),
-                    vec4(6.5, 6.5, -6.5, 7.0),
-                    vec4(6.5, -6.5, -6.5, 7.0),
-                ];
-            }
-            else if (shape === "dodecahedron") {
-                numPositions = 108;
-                vertices  = [
-                    vec4(1, 1, 1, 1.0), //8
-                    vec4(1, 1, -1, 1.0), //7
-                    vec4(1, -1, 1, 1.0), //6
-                    vec4(1, -1, -1, 1.0), //5
-                    vec4(-1, 1, 1, 1.0), //4
-                    vec4(-1, 1, -1, 1.0), //3
-                    vec4(-1, -1, 1, 1.0), //2
-                    vec4(-1, -1, -1, 1.0), //1
-                    vec4(0, B, A, 1.0), //12
-                    vec4(0, B, -A, 1.0), //11
-                    vec4(0, -B, A, 1.0), //10
-                    vec4(0, -B, -A, 1.0), //9
-                    vec4(B, A, 0, 1.0), //16
-                    vec4(B, -A, 0, 1.0), //15
-                    vec4(-B, A, 0, 1.0), //14
-                    vec4(-B, -A, 0, 1.0), //13
-                    vec4(A, 0, B, 1.0), //20
-                    vec4(A, 0, -B, 1.0), //18
-                    vec4(-A, 0, B, 1.0), //19
-                    vec4(-A, 0, -B, 1.0), //17
-                ];
-            }
+  eventListeners();
+  init();
 
-            positionsArray = [];
-            colorsArray = [];
-        
-            init();
-        });
-
-        document.getElementById("Button1").onclick = function(){near  *= 1.1; far *= 1.1;};
-        document.getElementById("Button2").onclick = function(){near *= 0.9; far *= 0.9;};
-        document.getElementById("Button3").onclick = function(){radius *= 2.0;};
-        document.getElementById("Button4").onclick = function(){radius *= 0.5;};
-        document.getElementById("Button5").onclick = function(){theta += dr;};
-        document.getElementById("Button6").onclick = function(){theta -= dr;};
-        document.getElementById("Button7").onclick = function(){phi += dr;};
-        document.getElementById("Button8").onclick = function(){phi -= dr;};
-    }
-    
-    function init() {
-
-        canvas = document.getElementById("gl-canvas");
-
-        gl = canvas.getContext('webgl2');
-        if (!gl) alert("WebGL 2.0 isn't available" );
-
-        gl.viewport(0, 0, canvas.width, canvas.height);
-        gl.clearColor(1.0, 1.0, 1.0, 1.0);
-
-        aspect =  canvas.width / canvas.height;
-
-        gl.enable(gl.DEPTH_TEST);
+  function eventListeners() {
+    document.getElementById("object-select").onchange = function () {
+        shape = this.value;
 
         if (shape === "cube") {
-            normalsArray = [];
-            colorCube();
+          numPositions = 36;
+          vertices = [
+            vec4(-6.5, -6.5, 6.5, 7.0),
+            vec4(-6.5, 6.5, 6.5, 7.0),
+            vec4(6.5, 6.5, 6.5, 7.0),
+            vec4(6.5, -6.5, 6.5, 7.0),
+            vec4(-6.5, -6.5, -6.5, 7.0),
+            vec4(-6.5, 6.5, -6.5, 7.0),
+            vec4(6.5, 6.5, -6.5, 7.0),
+            vec4(6.5, -6.5, -6.5, 7.0),
+          ];
         }
         else if (shape === "dodecahedron") {
-            normalsArray = [];
-            colorPenta();
+          numPositions = 108;
+          vertices = [
+            vec4(1, 1, 1, 1.0), //8
+            vec4(1, 1, -1, 1.0), //7
+            vec4(1, -1, 1, 1.0), //6
+            vec4(1, -1, -1, 1.0), //5
+            vec4(-1, 1, 1, 1.0), //4
+            vec4(-1, 1, -1, 1.0), //3
+            vec4(-1, -1, 1, 1.0), //2
+            vec4(-1, -1, -1, 1.0), //1
+            vec4(0, B, A, 1.0), //12
+            vec4(0, B, -A, 1.0), //11
+            vec4(0, -B, A, 1.0), //10
+            vec4(0, -B, -A, 1.0), //9
+            vec4(B, A, 0, 1.0), //16
+            vec4(B, -A, 0, 1.0), //15
+            vec4(-B, A, 0, 1.0), //14
+            vec4(-B, -A, 0, 1.0), //13
+            vec4(A, 0, B, 1.0), //20
+            vec4(A, 0, -B, 1.0), //18
+            vec4(-A, 0, B, 1.0), //19
+            vec4(-A, 0, -B, 1.0), //17
+          ];
         }
-        
-        //
-        //  Load shaders and initialize attribute buffers
-        //
-        program = initShaders(gl, "vertex-shader", "fragment-shader");
-        gl.useProgram(program);
 
-        var nBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW);
-    
-        var normalLoc = gl.getAttribLocation(program, "aNormal");
-        gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(normalLoc);
+        positionsArray = [];
+        colorsArray = [];
 
-        var cBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(colorsArray), gl.STATIC_DRAW);
+        init();
+    };
 
-        var colorLoc = gl.getAttribLocation(program, "aColor");
-        gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(colorLoc);
+    document.getElementById("Button1").onclick = function () {
+      near *= 1.1;
+      far *= 1.1;
+    };
+    document.getElementById("Button2").onclick = function () {
+      near *= 0.9;
+      far *= 0.9;
+    };
+    document.getElementById("Button3").onclick = function () {
+      radius *= 2.0;
+    };
+    document.getElementById("Button4").onclick = function () {
+      radius *= 0.5;
+    };
+    document.getElementById("Button5").onclick = function () {
+      theta += dr;
+    };
+    document.getElementById("Button6").onclick = function () {
+      theta -= dr;
+    };
+    document.getElementById("Button7").onclick = function () {
+      phi += dr;
+    };
+    document.getElementById("Button8").onclick = function () {
+      phi -= dr;
+    };
+  }
 
-        var vBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(positionsArray), gl.STATIC_DRAW);
+  function init() {
+    canvas = document.getElementById("gl-canvas");
 
-        var positionLoc = gl.getAttribLocation(program, "aPosition");
-        gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(positionLoc);
+    gl = canvas.getContext("webgl2");
+    if (!gl) alert("WebGL 2.0 isn't available");
 
-        modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
-        projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
-        
-        render();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
+    aspect = canvas.width / canvas.height;
+
+    gl.enable(gl.DEPTH_TEST);
+
+    if (shape === "cube") {
+      normalsArray = [];
+      colorCube();
+    } else if (shape === "dodecahedron") {
+      normalsArray = [];
+      colorPenta();
     }
-    
-    function render() {
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        
-        eye = vec3(radius*Math.sin(theta)*Math.cos(phi), radius*Math.sin(theta)*Math.sin(phi), radius*Math.cos(theta));
-        modelViewMatrix = lookAt(eye, at , up);
-        
-        // projectionMatrix = ortho(-2.0, 2.0, -2.0 / aspect, 2.0 / aspect, near, far);
-        projectionMatrix = ortho(-8.0, 8.0, -8.0, 8.0, -8.0, 8.0);
 
-        // modelViewMatrix = mat4();
-        // modelViewMatrix = mult(
-        //     modelViewMatrix,
-        //     rotate(theta[xAxis], vec3(1, 0, 0))
-        // );
-        // modelViewMatrix = mult(
-        //     modelViewMatrix,
-        //     rotate(theta[yAxis], vec3(0, 1, 0))
-        // );
-        // modelViewMatrix = mult(
-        //     modelViewMatrix,
-        //     rotate(theta[zAxis], vec3(0, 0, 1))
-        // );
+    //
+    //  Load shaders and initialize attribute buffers
+    //
+    program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
 
-        gl.uniformMatrix4fv(
-            modelViewMatrixLoc,
-            false,
-            flatten(modelViewMatrix)
-        );
+    var nBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW);
 
-        gl.uniformMatrix4fv(
-            projectionMatrixLoc,
-            false,
-            flatten(projectionMatrix)
-        );
+    var normalLoc = gl.getAttribLocation(program, "aNormal");
+    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normalLoc);
 
-        gl.drawArrays(gl.TRIANGLES, 0, numPositions);
+    var cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colorsArray), gl.STATIC_DRAW);
 
-        requestAnimationFrame(render);
-    }
-}
+    var colorLoc = gl.getAttribLocation(program, "aColor");
+    gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLoc);
+
+    var vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(positionsArray), gl.STATIC_DRAW);
+
+    var positionLoc = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLoc);
+
+    modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
+    projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
+
+    render();
+  }
+
+  function render() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    eye = vec3(
+      radius * Math.sin(theta) * Math.cos(phi),
+      radius * Math.sin(theta) * Math.sin(phi),
+      radius * Math.cos(theta)
+    );
+    modelViewMatrix = lookAt(eye, at, up);
+
+    // projectionMatrix = ortho(-2.0, 2.0, -2.0 / aspect, 2.0 / aspect, near, far);
+    projectionMatrix = ortho(-8.0, 8.0, -8.0, 8.0, -8.0, 8.0);
+
+    // modelViewMatrix = mat4();
+    // modelViewMatrix = mult(
+    //     modelViewMatrix,
+    //     rotate(theta[xAxis], vec3(1, 0, 0))
+    // );
+    // modelViewMatrix = mult(
+    //     modelViewMatrix,
+    //     rotate(theta[yAxis], vec3(0, 1, 0))
+    // );
+    // modelViewMatrix = mult(
+    //     modelViewMatrix,
+    //     rotate(theta[zAxis], vec3(0, 0, 1))
+    // );
+
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+
+    gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+
+    gl.drawArrays(gl.TRIANGLES, 0, numPositions);
+
+    requestAnimationFrame(render);
+  }
+};
 
 main();
