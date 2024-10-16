@@ -1,6 +1,6 @@
 // Get WebGL context
 const canvas = document.getElementById("glCanvas");
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("3d");
 
 // Get control elements
 const initialVelocityInput = document.getElementById("initialVelocity");
@@ -26,34 +26,65 @@ let isAnimating = false;
 let elapsedTime = 0;
 let lastTime = 0;
 
-// Add event listeners
-initialVelocityInput.addEventListener('input', () => { v0 = parseFloat(initialVelocityInput.value); });
-accelerationInput.addEventListener('input', () => { a = parseFloat(accelerationInput.value); });
-slopeAngleInput.addEventListener('input', () => {
-    theta = parseFloat(slopeAngleInput.value);
-    slopeAngleValue.textContent = theta;
-});
-cubeSizeInput.addEventListener('input', () => {
-    cubeSize = parseFloat(cubeSizeInput.value);
-    cubeSizeValue.textContent = cubeSize;
-});
-cubePositionInput.addEventListener('input', () => {
-    cubePosition = parseFloat(cubePositionInput.value);
-});
-faceColor1Input.addEventListener('input', () => { faceColor1 = faceColor1Input.value; });
-faceColor2Input.addEventListener('input', () => { faceColor2 = faceColor2Input.value; });
-faceColor3Input.addEventListener('input', () => { faceColor3 = faceColor3Input.value; });
+// Cube vertices (in 3D space)
+const vertices = [
+    [-1, -1,  1], // 0: front bottom left
+    [ 1, -1,  1], // 1: front bottom right
+    [ 1,  1,  1], // 2: front top right
+    [-1,  1,  1], // 3: front top left
+    [-1, -1, -1], // 4: back bottom left
+    [ 1, -1, -1], // 5: back bottom right
+    [ 1,  1, -1], // 6: back top right
+    [-1,  1, -1]  // 7: back top left
+];
 
-// Handle start/stop button
-startStopButton.addEventListener('click', () => {
-    isAnimating = !isAnimating;
-    startStopButton.textContent = isAnimating ? "Stop" : "Start";
-    if (isAnimating) {
-        lastTime = 0; // Reset the last time for new animation
-        elapsedTime = 0; // Reset elapsed time
-        requestAnimationFrame(animate);
-    }
-});
+// Simple perspective projection (projects 3D points onto 2D plane)
+function project([x, y, z], width, height, scale = 200) {
+    const distance = 4; // Distance from the viewer
+    const factor = scale / (distance - z);
+    const x2d = x * factor + width / 2;
+    const y2d = y * factor + height / 2;
+    return [x2d, y2d];
+}
+
+// Draw the cube using projected vertices
+function drawCube(x, y, size, frontColor, rightColor, topColor) {
+    const scaledVertices = vertices.map(v => {
+        return [v[0] * size / 2 + x, v[1] * size / 2 + y, v[2] * size / 2];
+    });
+
+    const projectedVertices = scaledVertices.map(v => project(v, canvas.width, canvas.height));
+
+    // Draw front face
+    ctx.fillStyle = frontColor;
+    ctx.beginPath();
+    ctx.moveTo(projectedVertices[0][0], projectedVertices[0][1]);
+    ctx.lineTo(projectedVertices[1][0], projectedVertices[1][1]);
+    ctx.lineTo(projectedVertices[2][0], projectedVertices[2][1]);
+    ctx.lineTo(projectedVertices[3][0], projectedVertices[3][1]);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw right face
+    ctx.fillStyle = rightColor;
+    ctx.beginPath();
+    ctx.moveTo(projectedVertices[1][0], projectedVertices[1][1]);
+    ctx.lineTo(projectedVertices[5][0], projectedVertices[5][1]);
+    ctx.lineTo(projectedVertices[6][0], projectedVertices[6][1]);
+    ctx.lineTo(projectedVertices[2][0], projectedVertices[2][1]);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw top face
+    ctx.fillStyle = topColor;
+    ctx.beginPath();
+    ctx.moveTo(projectedVertices[3][0], projectedVertices[3][1]);
+    ctx.lineTo(projectedVertices[2][0], projectedVertices[2][1]);
+    ctx.lineTo(projectedVertices[6][0], projectedVertices[6][1]);
+    ctx.lineTo(projectedVertices[7][0], projectedVertices[7][1]);
+    ctx.closePath();
+    ctx.fill();
+}
 
 // Calculate object movement based on physics (for slope simulation)
 function calculatePositionSlope(t, v0, a, theta) {
@@ -61,39 +92,9 @@ function calculatePositionSlope(t, v0, a, theta) {
     const horizontalDisplacement = v0 * t + 0.5 * a * t * t; // s = v₀t + ½at²
     const x = 50 + cubePosition + horizontalDisplacement * Math.cos(radTheta); // X position (adjusted for slope)
     
-    // Invert the sign of sin(theta) to move downwards
     const y = 200 + horizontalDisplacement * Math.sin(radTheta); // Y position (adjusted for slope)
     
     return { x, y };
-}
-
-// Draw the cube in 3D
-function drawCube(x, y, size, frontColor, rightColor, topColor) {
-    const halfSize = size / 2;
-
-    // Draw the front face
-    ctx.fillStyle = frontColor;
-    ctx.fillRect(x - halfSize, y - halfSize, size, size);
-
-    // Draw the right face
-    ctx.fillStyle = rightColor;
-    ctx.beginPath();
-    ctx.moveTo(x + halfSize, y - halfSize);
-    ctx.lineTo(x + halfSize, y + halfSize);
-    ctx.lineTo(x + halfSize * 1.2, y + halfSize * 0.8);
-    ctx.lineTo(x + halfSize * 1.2, y - halfSize * 0.2);
-    ctx.closePath();
-    ctx.fill();
-
-    // Draw the top face
-    ctx.fillStyle = topColor;
-    ctx.beginPath();
-    ctx.moveTo(x - halfSize, y - halfSize);
-    ctx.lineTo(x + halfSize, y - halfSize);
-    ctx.lineTo(x + halfSize * 1.2, y - halfSize * 0.2);
-    ctx.lineTo(x - halfSize * 0.2, y - halfSize * 0.2);
-    ctx.closePath();
-    ctx.fill();
 }
 
 // Draw the slope with improved gradient
