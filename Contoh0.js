@@ -1,6 +1,6 @@
 // Get WebGL context
 const canvas = document.getElementById("glCanvas");
-const ctx = canvas.getContext("3d");
+const ctx = canvas.getContext("webgl");
 
 // Get control elements
 const initialVelocityInput = document.getElementById("initialVelocity");
@@ -10,9 +10,24 @@ const slopeAngleValue = document.getElementById("slopeAngleValue");
 const cubeSizeInput = document.getElementById("cubeSize");
 const cubeSizeValue = document.getElementById("cubeSizeValue");
 const cubePositionInput = document.getElementById("cubePosition");
-const faceColor1Input = document.getElementById("faceColor1");
-const faceColor2Input = document.getElementById("faceColor2");
-const faceColor3Input = document.getElementById("faceColor3");
+const frontColorInput = document.getElementById("frontColor");
+const backColorInput = document.getElementById("backColor");
+const topColorInput = document.getElementById("topColor");
+const bottomColorInput = document.getElementById("bottomColor");
+const rightColorInput = document.getElementById("rightColor");
+const leftColorInput = document.getElementById("leftColor");
+const dodecaFace1ColorInput = document.getElementById("dodecaFace1Color");
+const dodecaFace2ColorInput = document.getElementById("dodecaFace2Color");
+const dodecaFace3ColorInput = document.getElementById("dodecaFace3Color");
+const dodecaFace4ColorInput = document.getElementById("dodecaFace4Color");
+const dodecaFace5ColorInput = document.getElementById("dodecaFace5Color");
+const dodecaFace6ColorInput = document.getElementById("dodecaFace6Color");
+const dodecaFace7ColorInput = document.getElementById("dodecaFace7Color");
+const dodecaFace8ColorInput = document.getElementById("dodecaFace8Color");
+const dodecaFace9ColorInput = document.getElementById("dodecaFace9Color");
+const dodecaFace10ColorInput = document.getElementById("dodecaFace10Color");
+const dodecaFace11ColorInput = document.getElementById("dodecaFace11Color");
+const dodecaFace12ColorInput = document.getElementById("dodecaFace12Color");
 const startStopButton = document.getElementById("startStopButton");
 const timeDisplay = document.getElementById("timeDisplay");
 
@@ -36,6 +51,21 @@ const vertices = [
     [ 1, -1, -1], // 5: back bottom right
     [ 1,  1, -1], // 6: back top right
     [-1,  1, -1]  // 7: back top left
+];
+
+// Dodecahedron vertices and faces
+const dodecaVertices = [
+    [1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1],
+    [-1, 1, 1], [-1, 1, -1], [-1, -1, 1], [-1, -1, -1],
+    [0, 0.618, 1.618], [0, 0.618, -1.618], [0, -0.618, 1.618], [0, -0.618, -1.618],
+    [0.618, 1.618, 0], [0.618, -1.618, 0], [-0.618, 1.618, 0], [-0.618, -1.618, 0],
+    [1.618, 0, 0.618], [1.618, 0, -0.618], [-1.618, 0, 0.618], [-1.618, 0, -0.618]
+];
+
+const dodecaFaces = [
+    [0, 8, 4, 14, 12], [1, 9, 5, 15, 13], [2, 10, 6, 16, 14], [3, 11, 7, 17, 15],
+    [0, 12, 1, 13, 17], [2, 14, 4, 18, 16], [3, 15, 5, 19, 17], [0, 8, 2, 10, 18],
+    [1, 9, 3, 11, 19], [4, 8, 10, 6, 18], [5, 9, 11, 7, 19], [6, 10, 2, 16, 14]
 ];
 
 // Simple perspective projection (projects 3D points onto 2D plane)
@@ -86,6 +116,26 @@ function drawCube(x, y, size, frontColor, rightColor, topColor) {
     ctx.fill();
 }
 
+// Draw the dodecahedron using projected vertices
+function drawDodecahedron(x, y, size, colors) {
+    const scaledVertices = dodecaVertices.map(v => {
+        return [v[0] * size / 2 + x, v[1] * size / 2 + y, v[2] * size / 2];
+    });
+
+    const projectedVertices = scaledVertices.map(v => project(v, canvas.width, canvas.height));
+
+    dodecaFaces.forEach((face, index) => {
+        ctx.fillStyle = colors[index];
+        ctx.beginPath();
+        ctx.moveTo(projectedVertices[face[0]][0], projectedVertices[face[0]][1]);
+        face.forEach(vertexIndex => {
+            ctx.lineTo(projectedVertices[vertexIndex][0], projectedVertices[vertexIndex][1]);
+        });
+        ctx.closePath();
+        ctx.fill();
+    });
+}
+
 // Calculate object movement based on physics (for slope simulation)
 function calculatePositionSlope(t, v0, a, theta) {
     const radTheta = theta * (Math.PI / 180); // Convert angle to radians
@@ -128,8 +178,29 @@ function drawScene() {
     // Calculate the position of the cube
     const { x, y } = calculatePositionSlope(elapsedTime, v0, a, theta);
 
+    // Get user-defined colors for the cube
+    const cubeColors = {
+        front: frontColorInput.value,
+        back: backColorInput.value,
+        top: topColorInput.value,
+        bottom: bottomColorInput.value,
+        right: rightColorInput.value,
+        left: leftColorInput.value
+    };
+
     // Draw the cube with user-defined colors
-    drawCube(x, y, cubeSize, faceColor1Input.value, faceColor2Input.value, faceColor3Input.value);
+    drawCube(x, y, cubeSize, cubeColors.front, cubeColors.right, cubeColors.top);
+
+    // Get user-defined colors for the dodecahedron
+    const dodecaColors = [
+        dodecaFace1ColorInput.value, dodecaFace2ColorInput.value, dodecaFace3ColorInput.value,
+        dodecaFace4ColorInput.value, dodecaFace5ColorInput.value, dodecaFace6ColorInput.value,
+        dodecaFace7ColorInput.value, dodecaFace8ColorInput.value, dodecaFace9ColorInput.value,
+        dodecaFace10ColorInput.value, dodecaFace11ColorInput.value, dodecaFace12ColorInput.value
+    ];
+
+    // Draw the dodecahedron with user-defined colors
+    drawDodecahedron(x + 200, y, cubeSize, dodecaColors);
 }
 
 // Animation loop
