@@ -16,6 +16,7 @@ var colorsArray = [];
 var normalsArray = [];
 
 var numPositions = 108;
+var numPositions = 108;
 var A = (1 + Math.sqrt(5)) / 2;
 var B = 1 / A;
 
@@ -42,6 +43,8 @@ var vertices = [
   vec4(-A, 0, -B, 1.0), //17
 ];
 
+var baseColor = vec4(1.0, 0.0, 1.0, 1.0);
+
 var lightPosition = vec4(1.0, 1.0, 1.0, 0.0);
 var lightAmbient = vec4(0.5, 0.5, 0.5, 1.0);
 var lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
@@ -51,6 +54,10 @@ var materialAmbient = vec4(1.0, 0.0, 1.0, 1.0);
 var materialDiffuse = vec4(1.0, 0.8, 0.0, 1.0);
 var materialSpecular = vec4(1.0, 0.8, 0.0, 1.0);
 var materialShininess = 20.0;
+
+var ambientProduct = mult(lightAmbient, materialAmbient);
+var diffuseProduct = mult(lightDiffuse, materialDiffuse);
+var specularProduct = mult(lightSpecular, materialSpecular);
 
 var modelViewMatrixLoc, projectionMatrixLoc;
 var modelViewMatrix, projectionMatrix;
@@ -161,53 +168,67 @@ var main = function () {
   eventListeners();
   init();
 
+  function hexToRgb(hex) {
+    var bigint = parseInt(hex.slice(1), 16);
+    var r = (bigint >> 16) & 255;
+    var g = (bigint >> 8) & 255;
+    var b = bigint & 255;
+    return vec4(r / 255, g / 255, b / 255, 1.0);
+  }
+
   function eventListeners() {
     document.getElementById("object-select").onchange = function () {
-        shape = this.value;
+      shape = this.value;
 
-        if (shape === "cube") {
-          numPositions = 36;
-          vertices = [
-            vec4(-6.5, -6.5, 6.5, 7.0),
-            vec4(-6.5, 6.5, 6.5, 7.0),
-            vec4(6.5, 6.5, 6.5, 7.0),
-            vec4(6.5, -6.5, 6.5, 7.0),
-            vec4(-6.5, -6.5, -6.5, 7.0),
-            vec4(-6.5, 6.5, -6.5, 7.0),
-            vec4(6.5, 6.5, -6.5, 7.0),
-            vec4(6.5, -6.5, -6.5, 7.0),
-          ];
-        }
-        else if (shape === "dodecahedron") {
-          numPositions = 108;
-          vertices = [
-            vec4(1, 1, 1, 1.0), //8
-            vec4(1, 1, -1, 1.0), //7
-            vec4(1, -1, 1, 1.0), //6
-            vec4(1, -1, -1, 1.0), //5
-            vec4(-1, 1, 1, 1.0), //4
-            vec4(-1, 1, -1, 1.0), //3
-            vec4(-1, -1, 1, 1.0), //2
-            vec4(-1, -1, -1, 1.0), //1
-            vec4(0, B, A, 1.0), //12
-            vec4(0, B, -A, 1.0), //11
-            vec4(0, -B, A, 1.0), //10
-            vec4(0, -B, -A, 1.0), //9
-            vec4(B, A, 0, 1.0), //16
-            vec4(B, -A, 0, 1.0), //15
-            vec4(-B, A, 0, 1.0), //14
-            vec4(-B, -A, 0, 1.0), //13
-            vec4(A, 0, B, 1.0), //20
-            vec4(A, 0, -B, 1.0), //18
-            vec4(-A, 0, B, 1.0), //19
-            vec4(-A, 0, -B, 1.0), //17
-          ];
-        }
+      if (shape === "cube") {
+        numPositions = 36;
+        vertices = [
+          vec4(-6.5, -6.5, 6.5, 7.0),
+          vec4(-6.5, 6.5, 6.5, 7.0),
+          vec4(6.5, 6.5, 6.5, 7.0),
+          vec4(6.5, -6.5, 6.5, 7.0),
+          vec4(-6.5, -6.5, -6.5, 7.0),
+          vec4(-6.5, 6.5, -6.5, 7.0),
+          vec4(6.5, 6.5, -6.5, 7.0),
+          vec4(6.5, -6.5, -6.5, 7.0),
+        ];
+      } else if (shape === "dodecahedron") {
+        numPositions = 108;
+        vertices = [
+          vec4(1, 1, 1, 1.0), //8
+          vec4(1, 1, -1, 1.0), //7
+          vec4(1, -1, 1, 1.0), //6
+          vec4(1, -1, -1, 1.0), //5
+          vec4(-1, 1, 1, 1.0), //4
+          vec4(-1, 1, -1, 1.0), //3
+          vec4(-1, -1, 1, 1.0), //2
+          vec4(-1, -1, -1, 1.0), //1
+          vec4(0, B, A, 1.0), //12
+          vec4(0, B, -A, 1.0), //11
+          vec4(0, -B, A, 1.0), //10
+          vec4(0, -B, -A, 1.0), //9
+          vec4(B, A, 0, 1.0), //16
+          vec4(B, -A, 0, 1.0), //15
+          vec4(-B, A, 0, 1.0), //14
+          vec4(-B, -A, 0, 1.0), //13
+          vec4(A, 0, B, 1.0), //20
+          vec4(A, 0, -B, 1.0), //18
+          vec4(-A, 0, B, 1.0), //19
+          vec4(-A, 0, -B, 1.0), //17
+        ];
+      }
 
-        positionsArray = [];
-        colorsArray = [];
+      positionsArray = [];
+      colorsArray = [];
 
-        init();
+      init();
+    };
+
+    document.getElementById("baseColor").onchange = function () {
+      var color = hexToRgb(this.value);
+      baseColor = color;
+
+      init();
     };
 
     document.getElementById("Button1").onclick = function () {
@@ -235,6 +256,36 @@ var main = function () {
     };
     document.getElementById("Button8").onclick = function () {
       phi -= dr;
+    };
+
+    document.getElementById("ambientSlider").oninput = function () {
+      var value = parseFloat(this.value);
+      lightAmbient = vec4(value, value, value, 1.0);
+      ambientProduct = mult(lightAmbient, materialAmbient);
+    };
+
+    document.getElementById("diffuseSlider").oninput = function () {
+      var value = parseFloat(this.value);
+      lightDiffuse = vec4(value, value, value, 1.0);
+      diffuseProduct = mult(lightDiffuse, materialDiffuse);
+    };
+
+    document.getElementById("specularSlider").oninput = function () {
+      var value = parseFloat(this.value);
+      lightSpecular = vec4(value, value, value, 1.0);
+      specularProduct = mult(lightSpecular, materialSpecular);
+    };
+
+    document.getElementById("lightXSlider").oninput = function () {
+      lightPosition[0] = parseFloat(this.value);
+    };
+
+    document.getElementById("lightYSlider").oninput = function () {
+      lightPosition[1] = parseFloat(this.value);
+    };
+
+    document.getElementById("lightZSlider").oninput = function () {
+      lightPosition[2] = parseFloat(this.value);
     };
   }
 
@@ -292,6 +343,11 @@ var main = function () {
     modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
 
+    gl.uniform1f(
+      gl.getUniformLocation(program, "uShininess"),
+      materialShininess
+    );
+
     render();
   }
 
@@ -321,6 +377,36 @@ var main = function () {
     //     modelViewMatrix,
     //     rotate(theta[zAxis], vec3(0, 0, 1))
     // );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uAmbientProduct"),
+      ambientProduct
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uDiffuseProduct"),
+      diffuseProduct
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uSpecularProduct"),
+      specularProduct
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uLightPosition"),
+      lightPosition
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uLightPosition"),
+      lightPosition
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uLightPosition"),
+      lightPosition
+    );
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
 
