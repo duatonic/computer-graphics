@@ -136,9 +136,10 @@
 
         in vec4 vColor;
         out vec4 fColor;
+        uniform vec4 uMaterialColor;
 
         void main() {
-            fColor = vColor;
+            fColor = vColor * uMaterialColor;
         }
     </script>
     <script src="initShaders.js"></script>
