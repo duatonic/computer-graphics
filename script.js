@@ -77,8 +77,6 @@ var aspect;
 var velocity = 1.0;
 var acceleration = 0.0;
 var angle = 0.0;
-var trajectory = "straight";
-
 
 var startTime = null;
 var isAnimating = false;
@@ -174,9 +172,6 @@ var main = function () {
     penta(15, 7, 19, 18, 6);
   }
 
-  eventListeners();
-  init();
-
   function hexToRgb(hex) {
     var bigint = parseInt(hex.slice(1), 16);
     var r = (bigint >> 16) & 255;
@@ -240,7 +235,6 @@ var main = function () {
       init();
     };
 
-    
     document.getElementById("Button1").onclick = function () {
       near *= 1.1;
       far *= 1.1;
@@ -298,167 +292,204 @@ var main = function () {
       lightPosition[2] = parseFloat(this.value);
     };
 
+    document.getElementById("baseColor").oninput = function () {
+      var color = hexToRgb(this.value);
+      baseColor = color;
+    };
+
     // Add event listeners for trajectory controls
-    document.getElementById("trajectory-select").addEventListener("change", function() {
-        trajectory = this.value;
-    });
-    document.getElementById("velocity").addEventListener("input", function() {
-        velocity = parseFloat(this.value);
-    });
-    document.getElementById("acceleration").addEventListener("input", function() {
-        acceleration = parseFloat(this.value);
-    });
-    document.getElementById("angle").addEventListener("input", function() {
-        angle = parseFloat(this.value);
-    });
+    document.getElementById("trajectory-select").onchange = function () {
+      motion = this.value;
+    };
+    document.getElementById("velocity").oninput = function () {
+      velocity = parseFloat(this.value);
+    };
+    document.getElementById("acceleration").oninput = function () {
+      acceleration = parseFloat(this.value);
+    };
+    document.getElementById("angle").oninput = function () {
+      angle = parseFloat(this.value);
+    };
+
     // Add event listeners for start and stop buttons
-    document.getElementById("startButton").addEventListener("click", function() {
-        isAnimating = true;
-        startTime = null; // Reset start time
-        requestAnimationFrame(render);
-    });
-    document.getElementById("stopButton").addEventListener("click", function() {
-        isAnimating = false;
-    });
+    document.getElementById("startButton").onclick = function () {
+      isAnimating = true;
+      startTime = null; // Reset start time
+      requestAnimationFrame(render);
+    };
+    document.getElementById("stopButton").onclick = function () {
+      isAnimating = false;
+    };
   }
 
   function calculatePosition(t) {
     var radAngle = angle * (Math.PI / 180); // Convert angle to radians
     var x, y;
 
-    switch (trajectory) {
-        case "straight":
-            x = velocity * t;
-            y = 0;
-            break;
-            case "angled":
-                x = velocity * t * Math.cos(radAngle);
-                y = velocity * t * Math.sin(radAngle);
-                break;
-            case "parabola":
-                x = velocity * t * Math.cos(radAngle);
-                y = velocity * t * Math.sin(radAngle) - 0.5 * -9.8 * t * t;
-                break;
-        }
-    
-        return { x, y };
+    switch (motion) {
+      case "straight":
+        x = velocity * t;
+        y = 0;
+        break;
+      case "angled":
+        x = velocity * t * Math.cos(radAngle);
+        y = velocity * t * Math.sin(radAngle);
+        break;
+      case "parabola":
+        x = velocity * t * Math.cos(radAngle);
+        y = velocity * t * Math.sin(radAngle) - 0.5 * 0.005 * t * t;
+        break;
+    }
+
+    return { x, y };
+  }
+
+  eventListeners();
+  init();
+
+  function init() {
+    canvas = document.getElementById("gl-canvas");
+
+    gl = canvas.getContext("webgl2");
+    if (!gl) alert("WebGL 2.0 isn't available");
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+
+    aspect = canvas.width / canvas.height;
+
+    gl.enable(gl.DEPTH_TEST);
+
+    if (shape === "cube") {
+      normalsArray = [];
+      colorCube();
+    } else if (shape === "dodecahedron") {
+      normalsArray = [];
+      colorPenta();
+    }
+
+    //
+    //  Load shaders and initialize attribute buffers
+    //
+    program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
+
+    var nBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW);
+
+    var normalLoc = gl.getAttribLocation(program, "aNormal");
+    gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normalLoc);
+
+    var cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colorsArray), gl.STATIC_DRAW);
+
+    var colorLoc = gl.getAttribLocation(program, "aColor");
+    gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colorLoc);
+
+    var vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(positionsArray), gl.STATIC_DRAW);
+
+    var positionLoc = gl.getAttribLocation(program, "aPosition");
+    gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLoc);
+
+    modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
+    projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
+
+    gl.uniform1f(
+      gl.getUniformLocation(program, "uShininess"),
+      materialShininess
+    );
+
+    render();
+  }
+
+  function render(timestamp) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    eye = vec3(
+      radius * Math.sin(theta) * Math.cos(phi),
+      radius * Math.sin(theta) * Math.sin(phi),
+      radius * Math.cos(theta)
+    );
+    modelViewMatrix = lookAt(eye, at, up);
+
+    // projectionMatrix = ortho(-2.0, 2.0, -2.0 / aspect, 2.0 / aspect, near, far);
+    projectionMatrix = ortho(-16.0, 16.0, -16.0 / aspect, 16.0 / aspect, -16.0, 16.0);
+
+    if (isAnimating) {
+      if (startTime === null) {
+        startTime = timestamp;
       }
-    
-      function init() {
-        canvas = document.getElementById("gl-canvas");
-    
-        gl = canvas.getContext("webgl2");
-        if (!gl) alert("WebGL 2.0 isn't available");
-    
-        gl.viewport(0, 0, canvas.width, canvas.height);
-        gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    
-        aspect = canvas.width / canvas.height;
-    
-        gl.enable(gl.DEPTH_TEST);
-    
-        if (shape === "cube") {
-          normalsArray = [];
-          colorCube();
-        } else if (shape === "dodecahedron") {
-          normalsArray = [];
-          colorPenta();
-        }
-    
-        //
-        //  Load shaders and initialize attribute buffers
-        //
-        program = initShaders(gl, "vertex-shader", "fragment-shader");
-        gl.useProgram(program);
-    
-        var nBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW);
-    
-        var normalLoc = gl.getAttribLocation(program, "aNormal");
-        gl.vertexAttribPointer(normalLoc, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(normalLoc);
-    
-        var cBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(colorsArray), gl.STATIC_DRAW);
-    
-        var colorLoc = gl.getAttribLocation(program, "aColor");
-        gl.vertexAttribPointer(colorLoc, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(colorLoc);
-    
-        var vBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(positionsArray), gl.STATIC_DRAW);
-    
-        var positionLoc = gl.getAttribLocation(program, "aPosition");
-        gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(positionLoc);
-    
-        modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
-        projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
-    
-        gl.uniform1f(
-          gl.getUniformLocation(program, "uShininess"),
-          materialShininess
-        );
-    
-        render();
-      }
-    
-      function render(timestamp) {
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
-        eye = vec3(
-          radius * Math.sin(theta) * Math.cos(phi),
-          radius * Math.sin(theta) * Math.sin(phi),
-          radius * Math.cos(theta)
-        );
-        modelViewMatrix = lookAt(eye, at, up);
-    
-        projectionMatrix = ortho(-8.0, 8.0, -8.0, 8.0, -8.0, 8.0);
-    
-        if (isAnimating) {
-          if (startTime === null) {
-            startTime = timestamp;
-          }
-          var elapsedTime = (timestamp - startTime) / 1000; // Convert to seconds
-          var position = calculatePosition(elapsedTime);
-    
-          // Update the modelViewMatrix with the new position
-          var translationMatrix = translate(position.x, position.y, 0);
-          modelViewMatrix = mult(modelViewMatrix, translationMatrix);
-        }
-    
-        gl.uniform4fv(
-          gl.getUniformLocation(program, "uAmbientProduct"),
-          ambientProduct
-        );
-    
-        gl.uniform4fv(
-          gl.getUniformLocation(program, "uDiffuseProduct"),
-          diffuseProduct
-        );
-    
-        gl.uniform4fv(
-          gl.getUniformLocation(program, "uSpecularProduct"),
-          specularProduct
-        );
-    
-        gl.uniform4fv(
-          gl.getUniformLocation(program, "uLightPosition"),
-          lightPosition
-        );
-    
-        gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-        gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
-    
-        gl.drawArrays(gl.TRIANGLES, 0, numPositions);
-    
-        if (isAnimating) {
-          requestAnimationFrame(render);
-        }
-      }
-    };
-    
-    main();
+      var elapsedTime = (timestamp - startTime) / 1000; // Convert to seconds
+      var position = calculatePosition(elapsedTime);
+
+      // Update the modelViewMatrix with the new position
+      var translationMatrix = translate(position.x, position.y, 0);
+      modelViewMatrix = mult(modelViewMatrix, translationMatrix);
+    }
+
+    // modelViewMatrix = mat4();
+    // modelViewMatrix = mult(
+    //     modelViewMatrix,
+    //     rotate(theta[xAxis], vec3(1, 0, 0))
+    // );
+    // modelViewMatrix = mult(
+    //     modelViewMatrix,
+    //     rotate(theta[yAxis], vec3(0, 1, 0))
+    // );
+    // modelViewMatrix = mult(
+    //     modelViewMatrix,
+    //     rotate(theta[zAxis], vec3(0, 0, 1))
+    // );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uAmbientProduct"),
+      ambientProduct
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uDiffuseProduct"),
+      diffuseProduct
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uSpecularProduct"),
+      specularProduct
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uLightPosition"),
+      lightPosition
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uLightPosition"),
+      lightPosition
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uLightPosition"),
+      lightPosition
+    );
+
+    gl.uniform4fv(gl.getUniformLocation(program, "uMaterialColor"), baseColor);
+
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+
+    gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+
+    gl.drawArrays(gl.TRIANGLES, 0, numPositions);
+
+    if (isAnimating) {
+      requestAnimationFrame(render);
+    }
+  }
+};
+
+main();
