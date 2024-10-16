@@ -287,6 +287,11 @@ var main = function () {
     document.getElementById("lightZSlider").oninput = function () {
       lightPosition[2] = parseFloat(this.value);
     };
+
+    document.getElementById("baseColor").oninput = function () {
+      var color = hexToRgb(this.value);
+      baseColor = color;
+    };
   }
 
   function init() {
@@ -406,6 +411,11 @@ var main = function () {
     gl.uniform4fv(
       gl.getUniformLocation(program, "uLightPosition"),
       lightPosition
+    );
+
+    gl.uniform4fv(
+      gl.getUniformLocation(program, "uMaterialColor"),
+      baseColor
     );
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
