@@ -112,6 +112,12 @@ window.onload = function init() {
   // Add collapse/expand button listener
   document.getElementById("toggleButton").addEventListener("click", toggleMenu);
 
+  // Add flip gravity button listener
+  document.getElementById("flipGravityButton").addEventListener("click", flipGravity);
+
+  // Add zero gravity button listener
+  document.getElementById("zeroGravityButton").addEventListener("click", zeroGravity);
+
   render();
 };
 
@@ -146,6 +152,18 @@ function toggleMenu() {
       controls.classList.add("collapsed");
       toggleButton.innerHTML = "Expand Menu";
   }
+}
+
+function flipGravity() {
+  gravity = -gravity; // Flip the sign of gravity
+  document.getElementById("gravity").value = gravity; // Update the slider
+  document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5); // Update the display
+}
+
+function zeroGravity() {
+  gravity = 0; 
+  document.getElementById("gravity").value = gravity; // Update the slider
+  document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5); // Update the display
 }
 
 function mapCoefFrictionToFrictionMove(coefFriction) {
