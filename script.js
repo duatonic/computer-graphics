@@ -328,7 +328,7 @@ var main = function () {
 
     switch (trajectory) {
         case "straight":
-            x = velocity * t;
+            x = velocity + acceleration * t;
             y = 0;
             break;
             case "angled":
@@ -337,7 +337,7 @@ var main = function () {
                 break;
             case "parabola":
                 x = velocity * t * Math.cos(radAngle);
-                y = velocity * t * Math.sin(radAngle) - 0.5 * -9.8 * t * t;
+                y = velocity * t * Math.sin(radAngle) - 0.5 * acceleration * t * t;
                 break;
         }
     
@@ -416,7 +416,7 @@ var main = function () {
         );
         modelViewMatrix = lookAt(eye, at, up);
     
-        projectionMatrix = ortho(-8.0, 8.0, -8.0, 8.0, -8.0, 8.0);
+        projectionMatrix = ortho(-8.0, 8.0, -8.0/aspect, 8.0/aspect, -8.0, 8.0);
     
         if (isAnimating) {
           if (startTime === null) {
