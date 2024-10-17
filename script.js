@@ -81,7 +81,7 @@ var angle = 0.0;
 var startTime = null;
 var isAnimating = false;
 
-var translation = vec4(-15.0, 0.0, 0.0, 1.0);
+var translation = vec4(0.0, 0.0, 0.0, 1.0);
 var indexColor = 0;
 
 var vertexColors = [
@@ -323,21 +323,22 @@ var main = function () {
   }
 
   function calculatePosition(t) {
-    var radAngle = angle * (Math.PI / 180); // Convert angle to radians
+    var radAngle = ((angle * Math.PI) / 180); // Convert angle to radians
+    var acceleration = objectForce / objectMass;
     var x, y;
 
     switch (motion) {
       case "straight":
-        x = velocity * t;
+        x = velocity * t + 0.5 * acceleration * t * t;
         y = 0;
         break;
       case "angled":
-        x = velocity * t * Math.cos(radAngle);
-        y = velocity * t * Math.sin(radAngle);
+        x = velocity * t * Math.cos(radAngle) + 0.5 * acceleration * t * t;
+        y = velocity * t * Math.sin(radAngle) + 0.5 * acceleration * t * t;
         break;
       case "parabola":
         x = velocity * t * Math.cos(radAngle);
-        y = velocity * t * Math.sin(radAngle) - 0.5 * 0.005 * t * t;
+        y = (velocity * Math.sin(radAngle) - 0.005 * t) * t;
         break;
     }
 
