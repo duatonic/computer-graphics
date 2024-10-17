@@ -34,26 +34,38 @@
         <div style="display: flex; justify-content: space-between;">
             <label for="ambientSlider">Ambient:</label>
             <input type="range" id="ambientSlider" min="0" max="1" step="0.01" value="0.5">
+            <span>0</span>
+            <span>1</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
             <label for="diffuseSlider">Diffuse:</label>
             <input type="range" id="diffuseSlider" min="0" max="1" step="0.01" value="1.0">
+            <span>0</span>
+            <span>1</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
             <label for="specularSlider">Specular:</label>
             <input type="range" id="specularSlider" min="0" max="1" step="0.01" value="1.0">
+            <span>0</span>
+            <span>1</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
             <label for="lightXSlider">Light Position X:</label>
             <input type="range" id="lightXSlider" min="-10" max="10" step="0.1" value="1.0">
+            <span>-10</span>
+            <span>10</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
             <label for="lightYSlider">Light Position Y:</label>
             <input type="range" id="lightYSlider" min="-10" max="10" step="0.1" value="1.0">
+            <span>-10</span>
+            <span>10</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
             <label for="lightZSlider">Light Position Z:</label>
             <input type="range" id="lightZSlider" min="-10" max="10" step="0.1" value="1.0">
+            <span>-10</span>
+            <span>10</span>
         </div>
     </div>
 
@@ -69,12 +81,18 @@
         <p> </p>
         <label for="velocity">Velocity:</label>
         <input type="range" id="velocity" min="0" max="10" step="0.1" value="1.0">
+        <span>0</span>
+        <span>10</span>
         <p> </p>
         <label for="acceleration">Acceleration:</label>
         <input type="range" id="acceleration" min="-10" max="10" step="0.1" value="0.0">
+        <span>-10</span>
+        <span>10</span>
         <p> </p>
         <label for="angle">Angle (degrees):</label>
         <input type="range" id="angle" min="0" max="90" step="1" value="0.0">
+        <span>0</span>
+        <span>90</span>
         <p> </p>
         <button id="startButton">Start Animation</button>
         <button id="stopButton">Stop Animation</button>
@@ -136,10 +154,9 @@
 
         in vec4 vColor;
         out vec4 fColor;
-        uniform vec4 uMaterialColor;
 
         void main() {
-            fColor = vColor * uMaterialColor;
+            fColor = vColor;
         }
     </script>
     <script src="initShaders.js"></script>
