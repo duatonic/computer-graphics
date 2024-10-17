@@ -74,9 +74,11 @@ var phi = 0.0;
 var dr = (5.0 * Math.PI) / 180.0;
 var aspect;
 
-var velocity = 1.0;
-var acceleration = 0.0;
-var angle = 0.0;
+var scaleObject = 1.0;
+
+var velocity = 0.0;
+var acceleration = objectForce / objectMass;
+var angle = 45.0;
 
 var startTime = null;
 var isAnimating = false;
@@ -178,6 +180,15 @@ var main = function () {
     var g = (bigint >> 8) & 255;
     var b = bigint & 255;
     return vec4(r / 255, g / 255, b / 255, 1.0);
+  }
+
+  function scalem(x, y, z) {
+    var result = mat4();
+    result[0][0] = x;
+    result[1][1] = y;
+    result[2][2] = z;
+    result[3][3] = 1.0;
+    return result;
   }
 
   function eventListeners() {
@@ -320,11 +331,21 @@ var main = function () {
       isAnimating = false;
       resetPosition(translation);
     };
+    document.getElementById("scaleSlider").oninput = function () {
+      scaleObject = parseFloat(this.value);
+    };
+  }
+
+  function translateScale(x, y, z) {
+    var result = mat4();
+    result[0][3] = x;
+    result[1][3] = y;
+    result[2][3] = z;
+    return result;
   }
 
   function calculatePosition(t) {
     var radAngle = (angle * Math.PI) / 180; // Convert angle to radians
-    var acceleration = objectForce / objectMass;
     var x, y;
 
     switch (motion) {
@@ -346,8 +367,8 @@ var main = function () {
   }
 
   function resetPosition(translation) {
-      translation[0] = -20.5; // Reset x position to the left
-      translation[1] = 0.0; // Reset y position to mid-height for simplicity
+    translation[0] = -20.5; // Reset x position to the left
+    translation[1] = 0.0; // Reset y position to mid-height for simplicity
   }
 
   function init() {
@@ -422,6 +443,8 @@ var main = function () {
     );
     modelViewMatrix = lookAt(eye, at, up);
 
+    var scalingMatrix = scalem(scaleObject, scaleObject, scaleObject);
+    modelViewMatrix = mult(modelViewMatrix, scalingMatrix);
     // projectionMatrix = ortho(-2.0, 2.0, -2.0 / aspect, 2.0 / aspect, near, far);
     projectionMatrix = ortho(
       -16.0,
@@ -436,24 +459,26 @@ var main = function () {
       if (startTime === null) {
         startTime = timestamp;
       }
+
       var elapsedTime = (timestamp - startTime) / 1000; // Convert to seconds
       var position = calculatePosition(elapsedTime);
 
-      translation[0] += position.x;
-      translation[1] += position.y;
+        translation[0] += position.x;
+        translation[1] += position.y;
 
-      //resetPosition(position);
+        var translationMatrix = translateScale(
+            translation[0],
+            translation[1],
+            translation[2]
+        );
+        modelViewMatrix = mult(modelViewMatrix, translationMatrix);
     }
 
-    var translationMatrix = translate(
-      translation[0],
-      translation[1],
-      translation[2]
-    );
-    modelViewMatrix = mult(modelViewMatrix, translationMatrix);
-
-    if (translation[0] >= canvas.width / 100 || translation[1] >= canvas.height / 100) {
-        resetPosition(translation);
+    if (
+      translation[0] >= canvas.width / 100 ||
+      translation[1] >= canvas.height / 100
+    ) {
+      resetPosition(translation);
     }
 
     // modelViewMatrix = mat4();
