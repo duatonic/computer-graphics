@@ -81,7 +81,7 @@ var angle = 0.0;
 var startTime = null;
 var isAnimating = false;
 
-var translation = vec4(0.0, 0.0, 0.0, 1.0);
+var translation = vec4(-20.5, 0.0, 0.0, 1.0);
 var indexColor = 0;
 
 var vertexColors = [
@@ -315,15 +315,15 @@ var main = function () {
     document.getElementById("startButton").onclick = function () {
       isAnimating = true;
       startTime = null; // Reset start time
-      requestAnimationFrame(render);
     };
     document.getElementById("stopButton").onclick = function () {
       isAnimating = false;
+      resetPosition(translation);
     };
   }
 
   function calculatePosition(t) {
-    var radAngle = ((angle * Math.PI) / 180); // Convert angle to radians
+    var radAngle = (angle * Math.PI) / 180; // Convert angle to radians
     var acceleration = objectForce / objectMass;
     var x, y;
 
@@ -338,15 +338,17 @@ var main = function () {
         break;
       case "parabola":
         x = velocity * t * Math.cos(radAngle);
-        y = (velocity * Math.sin(radAngle) - 0.005 * t) * t;
+        y = velocity * Math.sin(radAngle) * t - 0.5 * 9.8 * t * t;
         break;
     }
 
     return { x, y };
   }
 
-  eventListeners();
-  init();
+  function resetPosition(translation) {
+      translation[0] = -20.5; // Reset x position to the left
+      translation[1] = 0.0; // Reset y position to mid-height for simplicity
+  }
 
   function init() {
     canvas = document.getElementById("gl-canvas");
@@ -421,7 +423,14 @@ var main = function () {
     modelViewMatrix = lookAt(eye, at, up);
 
     // projectionMatrix = ortho(-2.0, 2.0, -2.0 / aspect, 2.0 / aspect, near, far);
-    projectionMatrix = ortho(-16.0, 16.0, -16.0 / aspect, 16.0 / aspect, -16.0, 16.0);
+    projectionMatrix = ortho(
+      -16.0,
+      16.0,
+      -16.0 / aspect,
+      16.0 / aspect,
+      -16.0,
+      16.0
+    );
 
     if (isAnimating) {
       if (startTime === null) {
@@ -430,9 +439,21 @@ var main = function () {
       var elapsedTime = (timestamp - startTime) / 1000; // Convert to seconds
       var position = calculatePosition(elapsedTime);
 
-      // Update the modelViewMatrix with the new position
-      var translationMatrix = translate(position.x, position.y, 0);
-      modelViewMatrix = mult(modelViewMatrix, translationMatrix);
+      translation[0] += position.x;
+      translation[1] += position.y;
+
+      //resetPosition(position);
+    }
+
+    var translationMatrix = translate(
+      translation[0],
+      translation[1],
+      translation[2]
+    );
+    modelViewMatrix = mult(modelViewMatrix, translationMatrix);
+
+    if (translation[0] >= canvas.width / 100 || translation[1] >= canvas.height / 100) {
+        resetPosition(translation);
     }
 
     // modelViewMatrix = mat4();
@@ -487,10 +508,11 @@ var main = function () {
 
     gl.drawArrays(gl.TRIANGLES, 0, numPositions);
 
-    if (isAnimating) {
-      requestAnimationFrame(render);
-    }
+    requestAnimationFrame(render);
   }
+
+  eventListeners();
+  init();
 };
 
 main();
