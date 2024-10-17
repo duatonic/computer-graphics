@@ -1,44 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WebGL 3D Shapes</title>
     <style>
+      /* General Styling */
       body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #74ebd5, #acb6e5);
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
       }
+
+      h3 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+
       canvas {
         display: block;
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
+      }
+
+      /* Panel Styling */
+      .panel {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 1200px;
+      }
+
+      /* Form Styling */
+      label {
+        font-weight: bold;
+        margin-right: 10px;
+      }
+
+      select,
+      input[type="color"],
+      input[type="range"],
+      button {
+        border-radius: 5px;
+        padding: 5px;
+        border: none;
+        margin-bottom: 10px;
+      }
+
+      select,
+      input[type="color"] {
+        border: 1px solid #ccc;
+      }
+
+      input[type="range"] {
+        width: 150px;
+      }
+
+      button {
+        background-color: #74ebd5;
+        color: white;
+        cursor: pointer;
+        transition: background 0.3s;
+        padding: 10px 15px;
+      }
+
+      button:hover {
+        background-color: #56c3a6;
+      }
+
+      /* Grid and Flexbox Layout */
+      .flex-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .flex-item {
+        flex: 1;
+        min-width: 280px;
+      }
+
+      .flex-item h3 {
+        text-align: center;
+      }
+
+      /* Button and Slider Layout */
+      .controls-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .controls-group div {
+        text-align: center;
+        margin: 0 5px;
+      }
+
+      /* Aligned Group for Sliders */
+      .slider-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      /* Button Group Styling */
+      .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+
+      .button-group button {
+        margin: 0 10px;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        body {
+          height: auto;
+          padding: 20px;
+        }
+
+        .panel {
+          padding: 15px;
+        }
+
+        canvas {
+          width: 100%;
+        }
+
+        .flex-row {
+          flex-direction: column;
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+
+        button {
+          margin-bottom: 10px;
+        }
       }
     </style>
   </head>
   <body>
     <canvas id="gl-canvas" width="1900" height="512"></canvas>
-    <label for="object-select">Choose an object:</label>
-    <select id="object-select">
-      <option value="dodecahedron">Dodecahedron</option>
-      <option value="cube">Cube</option>
-    </select>
-    <p></p>
-    <button id="Button1">Increase Z</button>
-    <button id="Button2">Decrease Z</button>
-    <button id="Button3">Increase R</button>
-    <button id="Button4">Decrease R</button>
-    <p></p>
-    <button id="Button5">Increase theta</button>
-    <button id="Button6">Decrease theta</button>
-    <button id="Button7">Increase phi</button>
-    <button id="Button8">Decrease phi</button>
-    <p></p>
-    <div style="display: flex;">
-        <div style="margin-right: 20px;">
-          <h3>Base Color</h3>
-          Base Color:
-          <input type="color" id="baseColor" value="#ff0000" /><br />
+
+    <div class="panel">
+      <div class="flex-row">
+        <div class="flex-item">
+          <label for="object-select">Choose an object:</label>
+          <select id="object-select">
+            <option value="dodecahedron">Dodecahedron</option>
+            <option value="cube">Cube</option>
+          </select>
         </div>
-        <div>
+
+        <div class="flex-item">
+          <h3>Base Color</h3>
+          <input type="color" id="baseColor" value="#ff0000" />
+        </div>
+
+        <div class="flex-item">
           <h3>Object Scale</h3>
           <label for="scaleSlider">Scale:</label>
-          <span>0.1</span>
           <input
             type="range"
             id="scaleSlider"
@@ -47,18 +188,14 @@
             step="0.1"
             value="1.0"
           />
-          <span>5.0</span>
         </div>
-    </div>
-    <div
-      style="display: inline-flex; align-content: baseline"
-    >
-      <div style="margin-right: 20px;">
-        <h3>Lighting Settings</h3>
-        <div style="display: flex; flex-direction: column; width: 250px">
-          <div style="display: flex; justify-content: space-between">
+      </div>
+
+      <div class="flex-row">
+        <div class="flex-item">
+          <h3>Lighting Settings</h3>
+          <div class="slider-group">
             <label for="ambientSlider">Ambient:</label>
-            <span>0</span>
             <input
               type="range"
               id="ambientSlider"
@@ -67,11 +204,9 @@
               step="0.01"
               value="0.5"
             />
-            <span>1</span>
           </div>
-          <div style="display: flex; justify-content: space-between">
+          <div class="slider-group">
             <label for="diffuseSlider">Diffuse:</label>
-            <span>0</span>
             <input
               type="range"
               id="diffuseSlider"
@@ -80,11 +215,9 @@
               step="0.01"
               value="1.0"
             />
-            <span>1</span>
           </div>
-          <div style="display: flex; justify-content: space-between">
+          <div class="slider-group">
             <label for="specularSlider">Specular:</label>
-            <span>0</span>
             <input
               type="range"
               id="specularSlider"
@@ -93,11 +226,9 @@
               step="0.01"
               value="1.0"
             />
-            <span>1</span>
           </div>
-          <div style="display: flex; justify-content: space-between">
-            <label for="lightXSlider">Light Position X:</label>
-            <span>-10</span>
+          <div class="slider-group">
+            <label for="lightXSlider">Light X:</label>
             <input
               type="range"
               id="lightXSlider"
@@ -106,11 +237,9 @@
               step="0.1"
               value="1.0"
             />
-            <span>10</span>
           </div>
-          <div style="display: flex; justify-content: space-between">
-            <label for="lightYSlider">Light Position Y:</label>
-            <span>-10</span>
+          <div class="slider-group">
+            <label for="lightYSlider">Light Y:</label>
             <input
               type="range"
               id="lightYSlider"
@@ -119,11 +248,9 @@
               step="0.1"
               value="1.0"
             />
-            <span>10</span>
           </div>
-          <div style="display: flex; justify-content: space-between">
-            <label for="lightZSlider">Light Position Z:</label>
-            <span>-10</span>
+          <div class="slider-group">
+            <label for="lightZSlider">Light Z:</label>
             <input
               type="range"
               id="lightZSlider"
@@ -132,13 +259,10 @@
               step="0.1"
               value="1.0"
             />
-            <span>10</span>
           </div>
         </div>
-      </div>
-      <div>
-        <!-- New controls for trajectory settings -->
-        <div>
+
+        <div class="flex-item">
           <h3>Trajectory Settings</h3>
           <label for="trajectory-select">Choose a trajectory:</label>
           <select id="trajectory-select">
@@ -146,47 +270,74 @@
             <option value="angled">Angled</option>
             <option value="parabola">Parabola</option>
           </select>
-          <p></p>
-          <label for="velocity">Velocity:</label>
-          <span>0</span>
-          <input
-            type="range"
-            id="velocity"
-            min="0.0"
-            max="10.0"
-            step="0.1"
-            value="0.0"
-          />
-          <span>10</span>
-          <p></p>
-          <label for="acceleration">Acceleration:</label>
-          <span>-10</span>
-          <input
-            type="range"
-            id="acceleration"
-            min="-10"
-            max="10"
-            step="0.1"
-            value="0.0"
-          />
-          <span>10</span>
-          <p></p>
-          <label for="angle">Angle (degrees):</label>
-          <span>0</span>
-          <input
-            type="range"
-            id="angle"
-            min="0"
-            max="90"
-            step="1"
-            value="45.0"
-          />
-          <span>90</span>
-          <p></p>
-          <button id="startButton">Start Animation</button>
-          <button id="stopButton">Stop Animation</button>
+
+          <div class="slider-group">
+            <label for="velocity">Velocity:</label>
+            <input
+              type="range"
+              id="velocity"
+              min="0.0"
+              max="10.0"
+              step="0.1"
+              value="2.5"
+            />
+          </div>
+
+          <div class="slider-group">
+            <label for="acceleration">Acceleration:</label>
+            <input
+              type="range"
+              id="acceleration"
+              min="-10"
+              max="10"
+              step="0.1"
+              value="0.0"
+            />
+          </div>
+
+          <div class="slider-group">
+            <label for="angle">Angle (degrees):</label>
+            <input
+              type="range"
+              id="angle"
+              min="0"
+              max="90"
+              step="1"
+              value="45.0"
+            />
+          </div>
         </div>
       </div>
+
+      <div class="button-group">
+        <button id="Button1">Increase Z</button>
+        <button id="Button2">Decrease Z</button>
+        <button id="Button3">Increase R</button>
+        <button id="Button4">Decrease R</button>
+        <button id="Button5">Increase theta</button>
+        <button id="Button6">Decrease theta</button>
+        <button id="Button7">Increase phi</button>
+        <button id="Button8">Decrease phi</button>
+      </div>
+
+      <div class="button-group">
+        <button id="startButton">Start Animation</button>
+        <button id="stopButton">Stop Animation</button>
+      </div>
+      <a
+        href="/BouncyBallSimulation/index.html"
+        style="
+          text-decoration: none;
+          color: #fff;
+          background-color: #74ebd5;
+          padding: 10px 20px;
+          border-radius: 5px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          transition: background 0.3s;
+        "
+      >
+        Go to bouncy ball
+      </a>
     </div>
 
     <script id="vertex-shader" type="x-shader/x-vertex">

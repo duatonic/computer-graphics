@@ -76,7 +76,7 @@ var aspect;
 
 var scaleObject = 1.0;
 
-var velocity = 0.0;
+var velocity = 2.5;
 var acceleration = objectForce / objectMass;
 var angle = 45.0;
 
@@ -383,6 +383,8 @@ var main = function () {
     aspect = canvas.width / canvas.height;
 
     gl.enable(gl.DEPTH_TEST);
+
+    resetPosition(translation);
 
     if (shape === "cube") {
       normalsArray = [];
