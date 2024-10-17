@@ -279,8 +279,8 @@ function updatePhysics() {
   }
 
   // Update speed display
-  document.getElementById("speedX").innerHTML = ballVelocity[0].toFixed(2);
-  document.getElementById("speedY").innerHTML = ballVelocity[1].toFixed(2);
+  document.getElementById("speedX").innerHTML = ballVelocity[0].toFixed(5);
+  document.getElementById("speedY").innerHTML = ballVelocity[1].toFixed(5);
   document.getElementById("positionX").innerHTML = ballPosition[0].toFixed(2);
   document.getElementById("positionY").innerHTML = ballPosition[1].toFixed(2);
 }
