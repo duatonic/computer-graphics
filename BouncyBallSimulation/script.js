@@ -2,16 +2,16 @@ var gl;
 var pointsArray = [];
 var colorsArray = [];
 
-var ballPosition = [0.0, 0.9, 0.0]; 
+var ballPosition = [0.0, 0.9, 0.0];
 var ballVelocity = [0.0, -0.01, 0.0];
-var gravity = -0.0005; 
-var restitution = 0.4; 
+var gravity = -0.0005;
+var restitution = 0.4;
 var coefFriction = 0.02;
 var acceleration = 0;
 
-var dragging = false; 
-var lastMousePosition = [0, 0]; 
-var releaseVelocity = [0.0, 0.0]; 
+var dragging = false;
+var lastMousePosition = [0, 0];
+var releaseVelocity = [0.0, 0.0];
 
 var modelViewMatrix, projectionMatrix;
 var modelViewMatrixLoc, projectionMatrixLoc;
@@ -21,8 +21,9 @@ var canvasHeight = window.innerHeight;
 var leftWall = -window.innerWidth / 830;
 var rightWall = -leftWall;
 var topWall = window.innerHeight / 900;
-var frictionMove = mapCoefFrictionToFrictionMove(1 - coefFriction); 
-var borderless = false; 
+var ground = -0.875;
+var frictionMove = mapCoefFrictionToFrictionMove(1 - coefFriction);
+var borderless = false;
 
 window.onload = function init() {
   var canvas = document.getElementById("gl-canvas");
@@ -34,21 +35,19 @@ window.onload = function init() {
     alert("WebGL 2.0 isn't available");
   }
 
-  // Ball geometry 
-  var ballRadius = 0.05 * 2.5; 
-  var slices = 100; 
+  var ballRadius = 0.05 * 2.5;
+  var slices = 100;
 
   for (var i = 0; i <= slices; i++) {
     var theta = (i * 2 * Math.PI) / slices;
     var x = ballRadius * Math.cos(theta);
     var y = ballRadius * Math.sin(theta);
     pointsArray.push(vec4(x, y, 0.0, 1.0));
-    colorsArray.push(vec4(1.0, 0.0, 0.0, 1.0)); // Red ball
+    colorsArray.push(vec4(1.0, 0.0, 0.0, 1.0));
   }
 
   gl.viewport(0, 0, canvasWidth, canvasHeight);
-  gl.clearColor(0.0, 0.0, 0.0, 1.0); // Black background
-
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
   var program = initShaders(gl, "vertex-shader", "fragment-shader");
   gl.useProgram(program);
 
@@ -71,18 +70,13 @@ window.onload = function init() {
   modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
   projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
 
-  // Calculate aspect ratio
   var aspect = canvasWidth / canvasHeight;
-
-  // Adjust projection matrix to match the aspect ratio
   projectionMatrix = ortho(-aspect, aspect, -1, 1, -1, 1);
 
-  // Add mouse event listeners
   canvas.addEventListener("mousedown", startDrag);
   canvas.addEventListener("mousemove", dragBall);
   canvas.addEventListener("mouseup", releaseBall);
 
-  // Add slider event listeners
   document.getElementById("coefFriction").oninput = function(event) {
     coefFriction = parseFloat(event.target.value);
     frictionMove = mapCoefFrictionToFrictionMove(1 - coefFriction);
@@ -94,43 +88,33 @@ window.onload = function init() {
   };
   document.getElementById("gravity").oninput = function(event) {
     gravity = parseFloat(event.target.value);
-    document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5); 
+    document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5);
   };
   document.getElementById("acceleration").oninput = function(event) {
     acceleration = parseFloat(event.target.value);
     document.getElementById("accelerationDisplay").innerHTML = acceleration.toFixed(5);
   };
 
-  // Add borderless toggle listener
   document.getElementById("borderlessToggle").addEventListener("change", function() {
     borderless = this.checked;
   });
 
-  // Add reset button listener
   document.getElementById("resetButton").addEventListener("click", resetToDefaults);
-
-  // Add collapse/expand button listener
   document.getElementById("toggleButton").addEventListener("click", toggleMenu);
-
-  // Add flip gravity button listener
   document.getElementById("flipGravityButton").addEventListener("click", flipGravity);
-
-  // Add zero gravity button listener
   document.getElementById("zeroGravityButton").addEventListener("click", zeroGravity);
 
   render();
 };
 
 function resetToDefaults() {
-  // Reset sliders to default values
   document.getElementById("coefFriction").value = 0.02;
   document.getElementById("restitution").value = 0.4;
   document.getElementById("gravity").value = -0.0005;
   document.getElementById("acceleration").value = 0;
 
-  // Update the corresponding variables and display values
   coefFriction = 0.02;
-  frictionMove = mapCoefFrictionToFrictionMove(1 - coefFriction); 
+  frictionMove = mapCoefFrictionToFrictionMove(1 - coefFriction);
   restitution = 0.4;
   gravity = -0.0005;
   acceleration = 0;
@@ -143,11 +127,11 @@ function resetToDefaults() {
 
 function toggleMenu() {
   var controls = document.getElementById("controls");
-  var toggleButton = document.getElementById("toggleButton"); 
-  
+  var toggleButton = document.getElementById("toggleButton");
+
   if (controls.classList.contains("collapsed")) {
       controls.classList.remove("collapsed");
-      toggleButton.innerHTML = "Collapse Menu"; 
+      toggleButton.innerHTML = "Collapse Menu";
   } else {
       controls.classList.add("collapsed");
       toggleButton.innerHTML = "Expand Menu";
@@ -155,42 +139,38 @@ function toggleMenu() {
 }
 
 function flipGravity() {
-  gravity = -gravity; // Flip the sign of gravity
-  document.getElementById("gravity").value = gravity; // Update the slider
-  document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5); // Update the display
+  gravity = -gravity;
+  document.getElementById("gravity").value = gravity;
+  document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5);
 }
 
 function zeroGravity() {
-  gravity = 0; 
-  document.getElementById("gravity").value = gravity; // Update the slider
-  document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5); // Update the display
+  gravity = 0;
+  document.getElementById("gravity").value = gravity;
+  document.getElementById("gravityDisplay").innerHTML = gravity.toFixed(5);
 }
 
 function mapCoefFrictionToFrictionMove(coefFriction) {
-  // Ensure coefFriction is within the range [0, 1]
   if (coefFriction < 0) coefFriction = 0;
   if (coefFriction > 1) coefFriction = 1;
 
-  // Calculate frictionMove using the linear mapping formula
   const frictionMove = 0.85 + (coefFriction * 0.1499);
 
   return frictionMove;
 }
 
 function startDrag(event) {
-  // Convert mouse coordinates to WebGL coordinates
   var mouseX = event.clientX;
   var mouseY = event.clientY;
   var worldPos = convertToWebGLCoordinates(mouseX, mouseY);
 
-  // Check if the mouse is within the ball
   var distance = Math.sqrt(
     Math.pow(worldPos[0] - ballPosition[0], 2) +
       Math.pow(worldPos[1] - ballPosition[1], 2)
   );
-  if (distance <= 0.125) { 
+  if (distance <= 0.125) {
     dragging = true;
-    lastMousePosition = worldPos; 
+    lastMousePosition = worldPos;
     ballVelocity = [0, 0];
   }
 }
@@ -205,8 +185,8 @@ function dragBall(event) {
   var deltaX = worldPos[0] - lastMousePosition[0];
   var deltaY = worldPos[1] - lastMousePosition[1];
 
-  ballPosition[0] += deltaX; 
-  ballPosition[1] += deltaY; 
+  ballPosition[0] += deltaX;
+  ballPosition[1] += deltaY;
 
   releaseVelocity[0] = deltaX;
   releaseVelocity[1] = deltaY;
@@ -227,8 +207,8 @@ function convertToWebGLCoordinates(mouseX, mouseY) {
 
   var aspect = canvasWidth / canvasHeight;
 
-  var x = ((mouseX - rect.left) / canvas.width) * 2 - 1; 
-  var y = -(((mouseY - rect.top) / canvas.height) * 2 - 1); 
+  var x = ((mouseX - rect.left) / canvas.width) * 2 - 1;
+  var y = -(((mouseY - rect.top) / canvas.height) * 2 - 1);
 
   x *= aspect;
 
@@ -237,30 +217,25 @@ function convertToWebGLCoordinates(mouseX, mouseY) {
 
 function updatePhysics() {
   if (!dragging) {
-    // Apply gravity to velocity
     ballVelocity[1] += gravity;
 
-    // Apply acceleration to velocity
     ballVelocity[0] += acceleration;
 
-    // Update ball position based on velocity
     ballPosition[0] += ballVelocity[0];
     ballPosition[1] += ballVelocity[1];
 
-    // Check for bounce on the ground
-    if (ballPosition[1] <= -1 + 0.125) {
+    if (ballPosition[1] <= ground) {
       ballVelocity[1] = -ballVelocity[1] * restitution;
-      ballVelocity[0] *= frictionMove; 
-      ballPosition[1] = -1 + 0.125;
+      ballVelocity[0] *= frictionMove;
+      ballPosition[1] = ground;
     }
 
-    // Check for bounce on the ceiling
     if (ballPosition[1] >= topWall) {
       ballVelocity[1] = -ballVelocity[1] * restitution;
-      ballPosition[1] = topWall; 
+      ballVelocity[0] *= frictionMove;
+      ballPosition[1] = topWall;
     }
 
-    // Handle borderless behavior
     if (borderless) {
       if (ballPosition[0] >= rightWall) {
         ballPosition[0] = leftWall;
@@ -268,17 +243,15 @@ function updatePhysics() {
         ballPosition[0] = rightWall;
       }
     } else {
-      // Check for collision with left and right walls (with borders)
       if (ballPosition[0] >= rightWall || ballPosition[0] <= leftWall) {
         ballVelocity[0] = -ballVelocity[0] * restitution;
-        if (ballPosition[0] >= rightWall) 
+        if (ballPosition[0] >= rightWall)
               ballPosition[0] = rightWall;
-        else  ballPosition[0] = leftWall; 
+        else  ballPosition[0] = leftWall;
       }
     }
   }
 
-  // Update speed display
   document.getElementById("speedX").innerHTML = ballVelocity[0].toFixed(5);
   document.getElementById("speedY").innerHTML = ballVelocity[1].toFixed(5);
   document.getElementById("positionX").innerHTML = ballPosition[0].toFixed(2);
