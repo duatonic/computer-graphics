@@ -74,6 +74,8 @@ var phi = 0.0;
 var dr = (5.0 * Math.PI) / 180.0;
 var aspect;
 
+var scale = 1.0;
+
 var velocity = 1.0;
 var acceleration = 0.0;
 var angle = 0.0;
@@ -81,7 +83,7 @@ var angle = 0.0;
 var startTime = null;
 var isAnimating = false;
 
-var translation = vec4(-15.0, 0.0, 0.0, 1.0);
+var translation = vec4(0.0, 0.0, 0.0, 1.0);
 var indexColor = 0;
 
 var vertexColors = [
@@ -179,6 +181,15 @@ var main = function () {
     var b = bigint & 255;
     return vec4(r / 255, g / 255, b / 255, 1.0);
   }
+
+  function scalem(x, y, z) {
+    var result = mat4();
+    result[0][0] = x;
+    result[1][1] = y;
+    result[2][2] = z;
+    result[3][3] = 1.0;
+    return result;
+}
 
   function eventListeners() {
     document.getElementById("object-select").onchange = function () {
@@ -320,25 +331,28 @@ var main = function () {
     document.getElementById("stopButton").onclick = function () {
       isAnimating = false;
     };
+    document.getElementById("scaleSlider").oninput = function () {
+      scale = parseFloat(this.value);
+    };
   }
 
   function calculatePosition(t) {
-    var radAngle = angle * (Math.PI / 180); // Convert angle to radians
+    var radAngle = ((angle * Math.PI) / 180); // Convert angle to radians
+    var acceleration = objectForce / objectMass;
     var x, y;
 
     switch (motion) {
       case "straight":
-        x = (velocity * t) + (0.5 * acceleration * t * t); // Horizontal motion with acceleration
+        x = velocity * t + 0.5 * acceleration * t * t;
         y = 0;
         break;
-    case "angled":
-        // GLBB for angled motion
-        x = (velocity * t * Math.cos(radAngle)) + (0.5 * acceleration * t * t * Math.cos(radAngle)); // Horizontal motion with acceleration
-        y = (velocity * t * Math.sin(radAngle)) + (0.5 * acceleration * t * t * Math.sin(radAngle)); // Vertical motion with acceleration
+      case "angled":
+        x = velocity * t * Math.cos(radAngle) + 0.5 * acceleration * t * t;
+        y = velocity * t * Math.sin(radAngle) + 0.5 * acceleration * t * t;
         break;
       case "parabola":
         x = velocity * t * Math.cos(radAngle);
-        y = velocity * t * Math.sin(radAngle) - 0.5 * 0.005 * t * t;
+        y = (velocity * Math.sin(radAngle) - 0.005 * t) * t;
         break;
     }
 
@@ -420,6 +434,8 @@ var main = function () {
     );
     modelViewMatrix = lookAt(eye, at, up);
 
+    var scalingMatrix = scalem(scale, scale, scale);
+    modelViewMatrix = mult(modelViewMatrix, scalingMatrix);
     // projectionMatrix = ortho(-2.0, 2.0, -2.0 / aspect, 2.0 / aspect, near, far);
     projectionMatrix = ortho(-16.0, 16.0, -16.0 / aspect, 16.0 / aspect, -16.0, 16.0);
 
@@ -433,6 +449,7 @@ var main = function () {
       // Update the modelViewMatrix with the new position
       var translationMatrix = translate(position.x, position.y, 0);
       modelViewMatrix = mult(modelViewMatrix, translationMatrix);
+     
     }
 
     // modelViewMatrix = mat4();
