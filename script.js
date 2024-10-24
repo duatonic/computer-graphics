@@ -8,40 +8,86 @@ var gl;
 var objectForce = 10.0;
 var objectMass = 10.0;
 
-var shape = "dodecahedron";
+var shape = "cube";
 var motion = "straight";
+
+var texSize = 64;
 
 var positionsArray = [];
 var colorsArray = [];
 var normalsArray = [];
+var texCoordsArray = [];
 
-var numPositions = 108;
-var numPositions = 108;
+var numPositions = 36;
 var A = (1 + Math.sqrt(5)) / 2;
 var B = 1 / A;
 
-var vertices = [
-  vec4(1, 1, 1, 1.0), //8
-  vec4(1, 1, -1, 1.0), //7
-  vec4(1, -1, 1, 1.0), //6
-  vec4(1, -1, -1, 1.0), //5
-  vec4(-1, 1, 1, 1.0), //4
-  vec4(-1, 1, -1, 1.0), //3
-  vec4(-1, -1, 1, 1.0), //2
-  vec4(-1, -1, -1, 1.0), //1
-  vec4(0, B, A, 1.0), //12
-  vec4(0, B, -A, 1.0), //11
-  vec4(0, -B, A, 1.0), //10
-  vec4(0, -B, -A, 1.0), //9
-  vec4(B, A, 0, 1.0), //16
-  vec4(B, -A, 0, 1.0), //15
-  vec4(-B, A, 0, 1.0), //14
-  vec4(-B, -A, 0, 1.0), //13
-  vec4(A, 0, B, 1.0), //20
-  vec4(A, 0, -B, 1.0), //18
-  vec4(-A, 0, B, 1.0), //19
-  vec4(-A, 0, -B, 1.0), //17
+var image1 = new Array()
+    for (var i =0; i<texSize; i++)  image1[i] = new Array();
+    for (var i =0; i<texSize; i++)
+        for ( var j = 0; j < texSize; j++)
+           image1[i][j] = new Float32Array(4);
+    for (var i =0; i<texSize; i++) for (var j=0; j<texSize; j++) {
+        var c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0));
+        image1[i][j] = [c, c, c, 1];
+    }
+
+var image2 = new Uint8Array(4*texSize*texSize);
+  for (var i = 0; i < texSize; i++)
+      for (var j = 0; j < texSize; j++)
+          for(var k =0; k<4; k++)
+              image2[4*texSize*i+4*j+k] = 255*image1[i][j][k];
+
+  var texCoord = [
+    vec2(0, 0),
+    vec2(0, 1),
+    vec2(1, 1),
+    vec2(1, 0)
 ];
+
+var textureImage = new Image();
+
+var vertices = [
+  // vec4(-6.5, -6.5, 6.5, 1.0),
+  // vec4(-6.5, 6.5, 6.5, 1.0),
+  // vec4(6.5, 6.5, 6.5, 1.0),
+  // vec4(6.5, -6.5, 6.5, 1.0),
+  // vec4(-6.5, -6.5, -6.5, 1.0),
+  // vec4(-6.5, 6.5, -6.5, 1.0),
+  // vec4(6.5, 6.5, -6.5, 1.0),
+  // vec4(6.5, -6.5, -6.5, 1.0),
+  vec4(-0.5, -0.5, 0.5, 1.0),
+  vec4(-0.5,  0.5, 0.5, 1.0),
+  vec4(0.5,  0.5, 0.5, 1.0),
+  vec4(0.5, -0.5, 0.5, 1.0),
+  vec4(-0.5, -0.5, -0.5, 1.0),
+  vec4(-0.5,  0.5, -0.5, 1.0),
+  vec4(0.5,  0.5, -0.5, 1.0),
+  vec4(0.5, -0.5, -0.5, 1.0)
+];
+
+// var vertices = [
+//   vec4(1, 1, 1, 1.0), //8
+//   vec4(1, 1, -1, 1.0), //7
+//   vec4(1, -1, 1, 1.0), //6
+//   vec4(1, -1, -1, 1.0), //5
+//   vec4(-1, 1, 1, 1.0), //4
+//   vec4(-1, 1, -1, 1.0), //3
+//   vec4(-1, -1, 1, 1.0), //2
+//   vec4(-1, -1, -1, 1.0), //1
+//   vec4(0, B, A, 1.0), //12
+//   vec4(0, B, -A, 1.0), //11
+//   vec4(0, -B, A, 1.0), //10
+//   vec4(0, -B, -A, 1.0), //9
+//   vec4(B, A, 0, 1.0), //16
+//   vec4(B, -A, 0, 1.0), //15
+//   vec4(-B, A, 0, 1.0), //14
+//   vec4(-B, -A, 0, 1.0), //13
+//   vec4(A, 0, B, 1.0), //20
+//   vec4(A, 0, -B, 1.0), //18
+//   vec4(-A, 0, B, 1.0), //19
+//   vec4(-A, 0, -B, 1.0), //17
+// ];
 
 var baseColor = vec4(1.0, 0.0, 1.0, 1.0);
 
@@ -112,6 +158,7 @@ var vertexColors = [
 var main = function () {
   function quad(a, b, c, d) {
     var indices = [a, b, c, a, c, d];
+    var indexCoord = [0, 1, 2, 0, 2, 3];
 
     var t1 = subtract(vertices[b], vertices[a]);
     var t2 = subtract(vertices[c], vertices[b]);
@@ -123,6 +170,7 @@ var main = function () {
     for (var i = 0; i < indices.length; i++) {
       positionsArray.push(vertices[indices[i]]);
       colorsArray.push(vertexColors[indexColor]);
+      texCoordsArray.push(texCoord[indexCoord[i]]);
 
       normalsArray.push(normal);
     }
@@ -174,6 +222,18 @@ var main = function () {
     penta(15, 7, 19, 18, 6);
   }
 
+  function configureTexture(image) {
+    var texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0,
+        gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
+        gl.NEAREST_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  }
+
   function hexToRgb(hex) {
     var bigint = parseInt(hex.slice(1), 16);
     var r = (bigint >> 16) & 255;
@@ -198,14 +258,22 @@ var main = function () {
       if (shape === "cube") {
         numPositions = 36;
         vertices = [
-          vec4(-6.5, -6.5, 6.5, 7.0),
-          vec4(-6.5, 6.5, 6.5, 7.0),
-          vec4(6.5, 6.5, 6.5, 7.0),
-          vec4(6.5, -6.5, 6.5, 7.0),
-          vec4(-6.5, -6.5, -6.5, 7.0),
-          vec4(-6.5, 6.5, -6.5, 7.0),
-          vec4(6.5, 6.5, -6.5, 7.0),
-          vec4(6.5, -6.5, -6.5, 7.0),
+          // vec4(-6.5, -6.5, 6.5, 1.0),
+          // vec4(-6.5, 6.5, 6.5, 1.0),
+          // vec4(6.5, 6.5, 6.5, 1.0),
+          // vec4(6.5, -6.5, 6.5, 1.0),
+          // vec4(-6.5, -6.5, -6.5, 1.0),
+          // vec4(-6.5, 6.5, -6.5, 1.0),
+          // vec4(6.5, 6.5, -6.5, 1.0),
+          // vec4(6.5, -6.5, -6.5, 1.0),
+          vec4(-0.5, -0.5, 0.5, 1.0),
+          vec4(-0.5,  0.5, 0.5, 1.0),
+          vec4(0.5,  0.5, 0.5, 1.0),
+          vec4(0.5, -0.5, 0.5, 1.0),
+          vec4(-0.5, -0.5, -0.5, 1.0),
+          vec4(-0.5,  0.5, -0.5, 1.0),
+          vec4(0.5,  0.5, -0.5, 1.0),
+          vec4(0.5, -0.5, -0.5, 1.0)
         ];
       } else if (shape === "dodecahedron") {
         numPositions = 108;
@@ -423,6 +491,21 @@ var main = function () {
     var positionLoc = gl.getAttribLocation(program, "aPosition");
     gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(positionLoc);
+
+    var tBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW);
+    var texCoordLoc = gl.getAttribLocation(program, "aTexCoord");
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(texCoordLoc);
+
+    // configureTexture(image2);
+    textureImage.src = "images.jpeg";
+    textureImage.onload = function () {
+      configureTexture(textureImage);
+    }
+
+    gl.uniform1i( gl.getUniformLocation(program, "uTextureMap"), 0);
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
